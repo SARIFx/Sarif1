@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SARIF X MODE — Key Manager</title>
+<style>
+:root{
+  --accent:#19d9e8;
+  --accent2:#1687ff;
+  --bg:#08121d;
+  --panel:rgba(7,18,30,.88);
+  --card:#fff;
+  --text:#17202a;
+  --muted:#6d7680;
+  --danger:#ff4d67;
+  --success:#18a875;
+  --gold:#ffd447;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Arial,Helvetica,sans-serif;color:#fff;
+  background:
+    radial-gradient(circle at 15% 20%,rgba(25,217,232,.16),transparent 25%),
+    radial-gradient(circle at 85% 70%,rgba(22,135,255,.14),transparent 28%),
+    linear-gradient(135deg,#07111b,#122b3e 55%,#07131e);
+  min-height:100vh;
+}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;
+  background-image:radial-gradient(#fff 1px,transparent 1px);
+  background-size:75px 75px;opacity:.14;
+}
+.header{
+  height:72px;background:rgba(4,12,20,.94);border-bottom:2px solid var(--accent);
+  display:flex;align-items:center;padding:0 18px;position:sticky;top:0;z-index:20;
+  box-shadow:0 8px 25px rgba(0,0,0,.3)
+}
+.logo{display:flex;align-items:center;gap:12px;font-size:24px;font-weight:800}
+.logoIcon{width:43px;height:43px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#fff);
+display:grid;place-items:center;color:#07131e;font-weight:900;box-shadow:0 0 18px rgba(25,217,232,.7)}
+.menuBtn{margin-left:auto;border:0;background:none;color:var(--accent);font-size:30px;cursor:pointer}
+.layout{display:flex;min-height:calc(100vh - 72px)}
+.sidebar{
+  width:240px;background:rgba(5,14,23,.9);border-right:1px solid rgba(25,217,232,.3);
+  padding:22px 14px;transition:.25s;flex-shrink:0
+}
+.nav{display:grid;gap:8px}
+.nav button{
+  border:0;background:transparent;color:#e8f3f7;text-align:left;padding:14px 15px;
+  border-radius:12px;font-size:16px;cursor:pointer
+}
+.nav button:hover,.nav button.active{background:rgba(25,217,232,.13);color:var(--accent)}
+.content{flex:1;padding:26px;max-width:1400px;margin:auto;width:100%}
+.page{display:none}.page.active{display:block}
+.title{font-size:27px;font-weight:800;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.stat{
+  background:var(--panel);border:1px solid rgba(255,255,255,.12);border-radius:17px;
+  padding:20px;box-shadow:0 15px 35px rgba(0,0,0,.22)
+}
+.stat small{color:#aab8c0}.stat b{display:block;font-size:29px;margin-top:8px}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:20px}
+.card{
+  background:rgba(255,255,255,.96);color:var(--text);border-radius:15px;overflow:hidden;
+  box-shadow:0 15px 35px rgba(0,0,0,.2)
+}
+.cardHead{
+  padding:14px 18px;background:linear-gradient(110deg,#1b2d3c,#24475a);
+  color:#fff;font-weight:700;font-size:18px;border-bottom:2px solid var(--accent)
+}
+.cardBody{padding:18px}
+.row{display:flex;justify-content:space-between;padding:13px 5px;border-bottom:1px solid #e5e7e9}
+.row:last-child{border-bottom:0}
+.formCard{max-width:850px;margin:auto}
+label{display:block;margin:14px 0 7px;color:#29333c;font-weight:600}
+input,select{
+  width:100%;padding:13px;border:1px solid #ccd3d8;border-radius:8px;
+  font-size:15px;background:#fff;color:#20262b;outline:none
+}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(25,217,232,.12)}
+.formGrid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.check{display:flex;gap:9px;align-items:center;margin-top:15px;color:#29333c}
+.check input{width:auto}
+.btn{
+  border:0;border-radius:10px;padding:13px 18px;font-weight:800;cursor:pointer;
+  background:linear-gradient(90deg,var(--accent2),var(--accent));color:#fff
+}
+.btn.secondary{background:#e8edf0;color:#26313a}
+.btn.danger{background:var(--danger)}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+.preview{
+  margin-top:18px;background:#f4f7f8;border:1px dashed #b9c5ca;border-radius:10px;
+  padding:15px;color:#29333c
+}
+.tableWrap{
+  background:rgba(255,255,255,.97);color:#1e2930;border-radius:15px;padding:15px;
+  overflow:auto;box-shadow:0 15px 35px rgba(0,0,0,.2)
+}
+.toolbar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:12px}
+.toolbar input{max-width:320px}
+table{width:100%;border-collapse:collapse;min-width:850px}
+th,td{padding:13px 10px;border-bottom:1px solid #e0e4e7;text-align:left;white-space:nowrap}
+th{font-weight:800;background:#f7f9fa}
+.key{font-family:monospace;color:#14886b;font-weight:700}
+.badge{padding:5px 9px;border-radius:20px;font-size:12px;font-weight:800}
+.badge.ok{background:#dff7ed;color:#087a52}.badge.off{background:#ffe5e9;color:#bd2943}
+.footer{margin-top:30px;background:rgba(4,12,20,.8);padding:20px;color:var(--gold);border-top:1px solid rgba(255,255,255,.08)}
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;place-items:center;z-index:50;padding:20px
+}
+.modal.show{display:grid}
+.modalBox{background:#fff;color:#20262b;width:min(520px,100%);border-radius:16px;padding:22px}
+.close{float:right;border:0;background:none;font-size:25px;cursor:pointer}
+.generated{
+  font-family:monospace;background:#09131c;color:#36e0bd;padding:14px;border-radius:9px;
+  word-break:break-all;margin:12px 0
+}
+.support{
+  position:fixed;right:18px;bottom:20px;width:58px;height:58px;border-radius:50%;
+  background:#1687d8;display:grid;place-items:center;font-size:25px;box-shadow:0 0 22px rgba(22,135,216,.5)
+}
+@media(max-width:900px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .sidebar{position:fixed;left:-250px;top:72px;bottom:0;z-index:30}.sidebar.open{left:0}
+  .cards{grid-template-columns:1fr}.content{padding:18px}
+}
+@media(max-width:560px){
+  .grid,.formGrid{grid-template-columns:1fr}.logo{font-size:19px}.logoIcon{width:38px;height:38px}
+  .title{font-size:23px}.toolbar{align-items:stretch;flex-direction:column}
+}
+
+/* AUTH + PUBLIC LINK */
+#authScreen{position:fixed;inset:0;z-index:100;background:linear-gradient(135deg,#06111b,#123247);display:grid;place-items:center;padding:20px}
+.authBox{width:min(430px,100%);background:rgba(255,255,255,.97);color:#18232c;border-radius:18px;padding:28px;box-shadow:0 25px 70px rgba(0,0,0,.45)}
+.authLogo{width:60px;height:60px;border-radius:16px;margin:0 auto 12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),#fff);color:#07131e;font-weight:900;font-size:18px}
+.authBox h2{text-align:center;margin:5px 0}.authBox p{text-align:center;color:#707980}
+.authError{color:#d52e49;text-align:center;min-height:20px;margin:8px 0}
+.linkBox{background:#f4f7f8;border:1px dashed #b8c4ca;border-radius:10px;padding:14px;margin-top:15px;word-break:break-all;color:#24313a}
+.copyBtn{margin-top:9px}
+.lockNote{font-size:13px;color:#69737a;margin-top:10px}
+.logout{margin-left:10px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;border-radius:9px;padding:9px 12px;cursor:pointer}
+
+</style>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import {getDatabase,ref,set,get,remove} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+import {getAuth,signInAnonymously} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+const firebaseConfig={"apiKey": "AIzaSyAUSA_HmmAoo8vZx2tmTtPEOc3PACZAsdk", "authDomain": "sarif-x-mode-3c64c.firebaseapp.com", "databaseURL": "https://sarif-x-mode-3c64c-default-rtdb.firebaseio.com", "projectId": "sarif-x-mode-3c64c", "storageBucket": "sarif-x-mode-3c64c.firebasestorage.app"};
+const app=initializeApp(firebaseConfig);
+window.sarifDB=getDatabase(app);
+window.sarifAuth=getAuth(app);
+window.sarifRef=ref; window.sarifSet=set; window.sarifGet=get; window.sarifRemove=remove;
+signInAnonymously(window.sarifAuth).catch(e=>console.error("Firebase auth:",e));
+
+window.cloudWriteKey=async k=>{try{await set(ref(window.sarifDB,"keys/"+k.id),k)}catch(e){console.error(e)}};
+window.cloudDeleteKey=async id=>{try{await remove(ref(window.sarifDB,"keys/"+id))}catch(e){console.error(e)}};
+window.cloudLoadKeys=async ()=>{
+ try{
+  const s=await get(ref(window.sarifDB,"keys"));
+  if(s.exists()){keys=Object.values(s.val()||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));save();renderDashboard();renderKeys()}
+ }catch(e){console.error("Firebase read:",e)}
+};
+</script>
+</head>
+<body>
+
+
+<div id="authScreen">
+  <div class="authBox">
+    <div class="authLogo">VIP</div>
+    <h2 id="authTitle">SARIF X MODE</h2>
+    <p>Admin Login</p>
+    <label>Username</label>
+    <input id="loginUser" autocomplete="username" placeholder="Enter username">
+    <label>Password</label>
+    <input id="loginPass" type="password" autocomplete="current-password" placeholder="Enter password">
+    <div class="authError" id="authError"></div>
+    <button class="btn" style="width:100%" onclick="login()">Login</button>
+    <p class="lockNote">Public key links can bypass this screen only for the automatic 1-day / 1-device / 1-key action.</p>
+  </div>
+</div>
+
+<header class="header">
+  <div class="logo"><div class="logoIcon">VIP</div> SARIF X MODE</div>
+  <button class="logout" onclick="logout()">Logout</button><button class="menuBtn" onclick="toggleMenu()">☰</button>
+</header>
+
+<div class="layout">
+<aside class="sidebar" id="sidebar">
+  <nav class="nav">
+    <button class="active" data-page="dashboard">⌂ &nbsp; Dashboard</button>
+    <button data-page="generate">＋ &nbsp; Generate</button>
+    <button data-page="keys">🔑 &nbsp; Keys</button>
+    <button data-page="settings">⚙ &nbsp; Settings</button>
+    <button data-page="link">🔗 &nbsp; Public Key Link</button>
+  </nav>
+</aside>
+
+
+
+<style>
+/* SARIF X MODE public landing page */
+.sxm-home{
+  position:relative; min-height:100vh; overflow:hidden; display:flex;
+  align-items:center; justify-content:center; padding:28px 18px;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(0,190,255,.12), transparent 32%),
+    radial-gradient(circle at 20% 20%, rgba(80,30,255,.10), transparent 28%),
+    #030712;
+}
+.sxm-grid{
+  position:absolute; inset:0; opacity:.28;
+  background-image:linear-gradient(rgba(35,150,190,.08) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(35,150,190,.08) 1px,transparent 1px);
+  background-size:42px 42px;
+}
+.sxm-particles{position:absolute;inset:0;pointer-events:none}
+.sxm-particles i{
+  position:absolute;width:9px;height:9px;background:#08b9d5;
+  box-shadow:0 0 12px rgba(8,185,213,.65);opacity:.85;
+}
+.sxm-particles i:nth-child(3n){background:#5930d7;box-shadow:0 0 12px rgba(89,48,215,.6)}
+.sxm-particles i:nth-child(4n){width:6px;height:6px;background:#19d6df}
+.sxm-ring{
+  position:absolute;width:280px;height:720px;border:2px solid rgba(0,222,235,.65);
+  border-radius:50%;transform:rotate(12deg);
+  box-shadow:0 0 22px rgba(0,220,235,.22), inset 0 0 22px rgba(0,220,235,.12);
+}
+.sxm-ring:before,.sxm-ring:after{
+  content:"";position:absolute;inset:16px;border:1px dashed rgba(0,220,235,.35);
+  border-radius:50%;
+}
+.sxm-ring:after{inset:32px;opacity:.5}
+.sxm-card{
+  position:relative;z-index:2;width:min(550px,94vw);padding:38px 34px 30px;
+  border:1px solid rgba(20,190,230,.26);border-radius:28px;
+  background:linear-gradient(145deg,rgba(10,27,57,.94),rgba(5,17,31,.95));
+  box-shadow:0 24px 80px rgba(0,0,0,.55),0 0 40px rgba(0,190,230,.08);
+  backdrop-filter:blur(16px);text-align:center;
+}
+.sxm-status{
+  display:inline-flex;align-items:center;gap:9px;padding:9px 18px;border-radius:999px;
+  border:1px solid rgba(0,230,220,.28);background:rgba(0,210,220,.06);
+  color:#22dbe5;font-weight:700;letter-spacing:2px;font-size:13px;
+  box-shadow:0 0 20px rgba(0,220,220,.12);
+}
+.sxm-dot{width:9px;height:9px;border-radius:50%;background:#16f2b0;box-shadow:0 0 12px #16f2b0}
+.sxm-title{
+  margin:30px 0 10px;font-size:clamp(34px,8vw,58px);line-height:1;
+  font-weight:900;letter-spacing:1px;color:#e9fbff;
+  text-shadow:0 0 22px rgba(0,220,255,.25);
+}
+.sxm-title span{color:#29e2ee}
+.sxm-sub{margin:0 0 28px;color:#9ba8bd;font-size:17px;line-height:1.5}
+.sxm-btn{
+  width:100%;height:62px;border:0;border-radius:18px;margin:9px 0;
+  display:flex;align-items:center;justify-content:center;gap:13px;
+  font-size:17px;font-weight:800;cursor:pointer;color:white;
+  text-decoration:none;box-sizing:border-box;transition:transform .15s,filter .15s;
+}
+.sxm-btn:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.sxm-btn svg{width:24px;height:24px;fill:currentColor}
+.sxm-inst{background:linear-gradient(90deg,#9c2bd1,#ee315d,#ff9b2d);box-shadow:0 12px 28px rgba(238,49,93,.18)}
+.sxm-tg{background:linear-gradient(90deg,#078fca,#23a9e5);box-shadow:0 12px 28px rgba(20,165,225,.16)}
+.sxm-login{background:linear-gradient(90deg,#11d7e7,#42a8f4);color:#04121d}
+.sxm-key{background:linear-gradient(90deg,#ffb315,#ff8d05);color:#251300;box-shadow:0 12px 28px rgba(255,157,12,.2)}
+.sxm-foot{margin-top:28px;color:#69758a;font-size:13px}
+@media(max-width:420px){.sxm-card{padding:30px 20px 25px}.sxm-btn{height:58px}.sxm-sub{font-size:15px}}
+</style>
+
+<section id="publicHome" class="page active" style="display:none">
+  <div class="sxm-home">
+    <div class="sxm-grid"></div>
+    <div class="sxm-particles">
+      <i style="left:3%;top:12%"></i><i style="left:16%;top:27%"></i><i style="left:28%;top:9%"></i>
+      <i style="left:43%;top:19%"></i><i style="left:58%;top:7%"></i><i style="left:73%;top:17%"></i>
+      <i style="left:88%;top:11%"></i><i style="left:95%;top:35%"></i><i style="left:8%;top:52%"></i>
+      <i style="left:22%;top:68%"></i><i style="left:79%;top:66%"></i><i style="left:91%;top:76%"></i>
+      <i style="left:13%;top:88%"></i><i style="left:34%;top:93%"></i><i style="left:66%;top:90%"></i>
+      <i style="left:84%;top:91%"></i><i style="left:48%;top:82%"></i><i style="left:2%;top:73%"></i>
+    </div>
+    <div class="sxm-ring"></div>
+
+    <div class="sxm-card">
+      <div class="sxm-status"><span class="sxm-dot"></span>SARIF X MODE ACTIVE</div>
+      <div class="sxm-title">SARIF <span>X MODE</span></div>
+      <p class="sxm-sub">Connect with our official channels and get your VIP key below</p>
+
+      <a class="sxm-btn sxm-inst" href="https://www.instagram.com/sarif_x_mode_?igsh=ZTdleHZpaDU1bXpu" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24"><path d="M7.8 2h8.4A5.8 5.8 0 0 1 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8A5.8 5.8 0 0 1 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2zm0 2A3.8 3.8 0 0 0 4 7.8v8.4A3.8 3.8 0 0 0 7.8 20h8.4a3.8 3.8 0 0 0 3.8-3.8V7.8A3.8 3.8 0 0 0 16.2 4H7.8zm8.65 1.5a1.05 1.05 0 1 1 0 2.1 1.05 1.05 0 0 1 0-2.1zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+        Follow Instagram
+      </a>
+
+      <a class="sxm-btn sxm-tg" href="https://t.me/+7AqxSzhz4-81ZTA9" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24"><path d="M21.6 3.2 2.9 10.4c-1.28.5-1.27 1.2-.23 1.52l4.8 1.5 1.84 5.68c.22.61.11.86.75.86.5 0 .72-.23.98-.5l2.34-2.27 4.86 3.59c.89.49 1.53.23 1.75-.82l3.13-14.76c.32-1.29-.49-1.87-1.52-1.38zM8.2 13.1l10.98-6.93c.54-.33 1.03-.15.63.21l-8.9 8.03-.35 3.35-1.36-4.66z"/></svg>
+        Join Telegram Channel
+      </a>
+
+      <button class="sxm-btn sxm-login" onclick="openAdminLogin()">⇥&nbsp; Admin Login / Dashboard</button>
+
+      <button class="sxm-btn sxm-key" onclick="startKeyGate()">⚿&nbsp; Get VIP Key</button>
+
+      <div class="sxm-foot">© 2026 SARIF X MODE. All rights reserved.</div>
+    </div>
+  </div>
+</section>
+
+
+<main class="content">
+
+<section id="dashboard" class="page active">
+  <div class="title">Dashboard</div>
+  <div class="grid">
+    <div class="stat"><small>Total Keys</small><b id="totalKeys">0</b></div>
+    <div class="stat"><small>Used Keys</small><b id="usedKeys">0</b></div>
+    <div class="stat"><small>Unused Keys</small><b id="unusedKeys">0</b></div>
+    <div class="stat"><small>Total Devices</small><b id="totalDevices">0</b></div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="cardHead">Expiration</div>
+      <div class="cardBody">
+        <div class="row"><span>Panel Access</span><b id="panelExpiry">Active</b></div>
+        <div class="row"><span>Generated Today</span><b id="todayCount">0</b></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cardHead">Information</div>
+      <div class="cardBody">
+        <div class="row"><span>Role</span><b>Admin</b></div>
+        <div class="row"><span>Balance</span><b id="balance">₹0</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="cardHead">Game Statistics</div>
+      <div class="cardBody" id="gameStats"></div>
+    </div>
+    <div class="card">
+      <div class="cardHead">Recent Activity</div>
+      <div class="cardBody" id="recentActivity"></div>
+    </div>
+  </div>
+</section>
+
+<section id="generate" class="page">
+  <div class="title">Generate License</div>
+  <div class="card formCard">
+    <div class="cardHead">Create License</div>
+    <div class="cardBody">
+      <div class="formGrid">
+        <div>
+          <label>Game</label>
+          <select id="game">
+            <option>PUBG Mobile</option><option>Free Fire</option><option>Free Fire MAX</option><option>Call of Duty Mobile</option>
+          </select>
+        </div>
+        <div>
+          <label>Max Devices</label>
+          <input id="devices" type="number" min="1" value="1">
+        </div>
+        <div>
+          <label>Duration</label>
+          <select id="duration">
+            <option value="1">1 Day</option>
+            <option value="3">3 Days</option>
+            <option value="7">7 Days</option>
+            <option value="30" selected>30 Days</option>
+            <option value="90">90 Days</option>
+            <option value="365">365 Days</option>
+          </select>
+        </div>
+        <div>
+          <label>Price / Key (₹)</label>
+          <input id="price" type="number" min="0" value="10">
+        </div>
+      </div>
+
+      <label class="check"><input type="checkbox" id="customCheck" onchange="toggleCustom()"> Use Custom Key</label>
+      <div id="customArea" style="display:none">
+        <label>Custom Key</label><input id="customKey" placeholder="e.g. SARIF_X_MODE_">
+      </div>
+
+      <label>Bulk Keys</label>
+      <input id="quantity" type="number" min="1" max="500" value="1">
+
+      <div class="preview">
+        Estimated Cost: <b id="estimate">₹10</b><br>
+        <span id="summary">1 key • PUBG Mobile • 1 device • 30 Days</span>
+      </div>
+
+      <div class="actions">
+        <button class="btn" onclick="generateKeys()">Generate Keys</button>
+        <button class="btn secondary" onclick="resetForm()">Reset</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="keys" class="page">
+  <div class="title">Keys Management</div>
+  <div class="tableWrap">
+    <div class="toolbar">
+      <select id="pageSize" style="width:110px" onchange="renderKeys()">
+        <option>10</option><option>25</option><option>50</option>
+      </select>
+      <input id="search" placeholder="Search game, key or status..." oninput="renderKeys()">
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Game</th><th>User Key</th><th>Devices</th><th>Duration</th><th>Price</th><th>Status</th><th>Created</th><th>Action</th></tr></thead>
+      <tbody id="keyTable"></tbody>
+    </table>
+    <div id="empty" style="padding:30px;text-align:center;color:#707980;display:none">No keys found.</div>
+  </div>
+</section>
+
+<section id="settings" class="page">
+  <div class="title">Panel Settings</div>
+  <div class="card">
+    <div class="cardHead">Customization</div>
+    <div class="cardBody">
+      <div class="formGrid">
+        <div><label>Panel Name</label><input id="panelName" value="SARIF X MODE"></div>
+        <div><label>Admin Balance (demo)</label><input id="adminBalance" type="number" value="2147457947"></div>
+        <div><label>Default Key Prefix</label><input id="prefix" value="SARIF_X_MODE_"></div>
+        <div><label>Support Text</label><input id="supportText" value="Contact Support"></div>
+        <div><label>Admin Username</label><input id="newUser" value="admin"></div>
+        <div><label>Admin Password</label><input id="newPass" type="password" value="adminkuropanal"></div>
+      </div>
+      
+<div style="margin-top:16px;padding:14px;border-radius:10px;background:#fff3cd;color:#5d4700">
+<b>Firebase security:</b> This HTML contains only the client Firebase configuration.
+The database must be protected with Firebase Authentication and Realtime Database Security Rules.
+Never place a Firebase service-account private key in this HTML.
+</div>
+<div class="actions"><button class="btn" onclick="saveSettings()">Save Settings</button><button class="btn danger" onclick="clearAll()">Clear Demo Data</button></div>
+    </div>
+  </div>
+</section>
+
+
+<section id="link" class="page">
+  <div class="title">Public Key Link</div>
+  <div class="card">
+    <div class="cardHead">One-Click Key Generator</div>
+    <div class="cardBody">
+      <p style="color:#29333c">Anyone opening this public link will automatically receive <b>1 Key • 1 Device • 1 Day</b>. They do not need the admin username/password for that public action.</p>
+      <label>Game for Public Link</label>
+      <select id="publicGame">
+        <option>PUBG Mobile</option><option>Free Fire</option><option>Free Fire MAX</option><option>Call of Duty Mobile</option>
+      </select>
+      <label>Public Link Token</label>
+      <input id="publicToken" readonly>
+      <div class="linkBox" id="publicLinkText"></div>
+      <button class="btn copyBtn" onclick="copyPublicLink()">Copy Public Link</button>
+      <div class="lockNote">The normal Dashboard, Generate, Keys and Settings pages remain protected by the admin login.</div>
+    </div>
+  </div>
+</section>
+
+
+<div class="card" style="margin-top:20px">
+<div class="cardHead">Cloud Database</div><div class="cardBody">
+<div class="row"><span>Firebase</span><b id="firebaseStatus">Connected</b></div>
+<div class="row"><span>Project</span><b>sarif-x-mode-3c64c</b></div>
+</div></div>
+
+<div style="margin-top:18px;padding:16px;border:1px solid #d7dee3;border-radius:12px">
+  <h3 style="margin-top:0">Key Generation Link</h3>
+  <label>Gate / Shortlink URL</label>
+  <input id="gateUrl" placeholder="https://example.com/your-link">
+  <label>Return parameter</label>
+  <input id="gateReturnParam" value="return" placeholder="return">
+  <p class="lockNote">The external service must redirect back to this website after completion.</p>
+  <button class="btn" onclick="saveGateSettings()">Save Key Link</button>
+</div>
+
+<div class="footer">© 2026 – <b>SARIF X MODE</b></div>
+</main>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modalBox">
+    <button class="close" onclick="closeModal()">×</button>
+    <h2>Generated Key</h2>
+    <p>Your key has been created successfully.</p>
+    <div class="generated" id="generatedKey"></div>
+    <p id="generatedInfo"></p>
+    <button class="btn" onclick="closeModal()">Done</button>
+  </div>
+</div>
+<a class="support" href="https://t.me/+7AqxSzhz4-81ZTA9" target="_blank" rel="noopener noreferrer" aria-label="Telegram Support">✈</a>
+
+<script>
+const STORE="freeVipPanelDemo";
+
+const AUTH_STORE=STORE+"_auth";
+const DEFAULT_AUTH={user:"admin",pass:"adminkuropanal"};
+const PUBLIC_TOKEN_STORE=STORE+"_public_token";
+let publicToken=localStorage.getItem(PUBLIC_TOKEN_STORE);
+if(!publicToken){publicToken="PUB_"+Math.random().toString(36).slice(2,10).toUpperCase();localStorage.setItem(PUBLIC_TOKEN_STORE,publicToken)}
+function isLogged(){return sessionStorage.getItem(AUTH_STORE)==="1"}
+function showAuth(){document.getElementById("authScreen").style.display="grid"}
+function hideAuth(){document.getElementById("authScreen").style.display="none"}
+function login(){
+  const u=loginUser.value.trim(), p=loginPass.value;
+  const saved=JSON.parse(localStorage.getItem(STORE+"_credentials")||"null")||DEFAULT_AUTH;
+  if(u===saved.user && p===saved.pass){sessionStorage.setItem(AUTH_STORE,"1");hideAuth();document.getElementById("sidebar").style.display="";document.getElementById("publicHome").style.display="none";authError.textContent="";navigate("dashboard")}
+  else authError.textContent="Invalid username or password";
+}
+function logout(){sessionStorage.removeItem(AUTH_STORE);hideAuth();document.getElementById("sidebar").style.display="none";document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById("publicHome").style.display="block";document.getElementById("publicHome").classList.add("active")}
+function getPublicUrl(){
+  const base=location.href.split("?")[0].split("#")[0];
+  return base+"?publicKey="+encodeURIComponent(publicToken);
+}
+function renderPublicLink(){
+  publicToken.value=publicToken;
+  publicLinkText.textContent=getPublicUrl();
+}
+async function copyPublicLink(){
+  try{await navigator.clipboard.writeText(getPublicUrl());alert("Public link copied.");}
+  catch(e){prompt("Copy this link:",getPublicUrl())}
+}
+function autoGenerateFromPublicLink(){
+  const token=new URLSearchParams(location.search).get("publicKey");
+  if(token!==publicToken)return false;
+  const g=new URLSearchParams(location.search).get("game")||"PUBG Mobile";
+  const now=Date.now();
+  const k={id:uid(),game:g,key:keyCode(settings.prefix),devices:1,used:0,duration:1,price:0,status:"Unused",created:formatDate(),createdAt:now,expiresAt:now+1*24*60*60*1000,public:true};
+  keys.unshift(k);save(); window.cloudWriteKey?.(k);
+  document.body.innerHTML=`<div style="min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(135deg,#06111b,#123247);font-family:Arial">
+    <div style="background:#fff;color:#17202a;width:min(500px,100%);padding:28px;border-radius:18px;text-align:center;box-shadow:0 25px 70px #0007">
+      <div style="font-size:42px">✓</div><h2>Key Generated</h2>
+      <p>${g} • 1 Device • 1 Day</p>
+      <div style="font:700 20px monospace;background:#09131c;color:#36e0bd;padding:16px;border-radius:10px;word-break:break-all">${k.key}</div>
+      <p style="color:#68727a">This key expires in 1 day. Keep this key safe.</p>
+    </div></div>`;
+  return true;
+}
+
+let keys=JSON.parse(localStorage.getItem(STORE)||"[]");
+let settings=JSON.parse(localStorage.getItem(STORE+"_settings")||'{"name":"SARIF X MODE","balance":2147457947,"prefix":"SARIF_X_MODE_"}');
+
+function save(){localStorage.setItem(STORE,JSON.stringify(keys))}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function keyCode(prefix){return prefix+Math.random().toString(36).slice(2,8).toUpperCase()+"_"+Math.random().toString(36).slice(2,6).toUpperCase()}
+function formatDate(){return new Date().toLocaleDateString()}
+function toggleMenu(){document.getElementById("sidebar").classList.toggle("open")}
+function toggleCustom(){document.getElementById("customArea").style.display=document.getElementById("customCheck").checked?"block":"none"}
+function navigate(page){
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  document.getElementById(page).classList.add("active");
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===page));
+  if(page==="dashboard")renderDashboard(); if(page==="keys")renderKeys(); if(page==="link")renderPublicLink(); setTimeout(()=>window.cloudLoadKeys?.(),1200);
+  document.getElementById("sidebar").classList.remove("open");
+}
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>navigate(b.dataset.page));
+
+function updateEstimate(){
+  const q=+quantity.value||1,p=+price.value||0;
+  estimate.textContent="₹"+(q*p).toLocaleString("en-IN");
+  summary.textContent=`${q} key${q>1?"s":""} • ${game.value} • ${devices.value||1} device${(+devices.value||1)>1?"s":""} • ${duration.options[duration.selectedIndex].text}`;
+}
+["game","devices","duration","price","quantity"].forEach(id=>document.getElementById(id).addEventListener("input",updateEstimate));
+
+function generateKeys(){
+  const gameVal=game.value, dev=Math.max(1,+devices.value||1), days=+duration.value||1;
+  const q=Math.min(500,Math.max(1,+quantity.value||1)), p=Math.max(0,+price.value||0);
+  let prefix=customCheck.checked?(customKey.value.trim()||settings.prefix):settings.prefix;
+  let made=[];
+  for(let i=0;i<q;i++){
+    const k=customCheck.checked && q===1 ? prefix : keyCode(prefix);
+    const createdAt=Date.now();
+    const item={id:uid(),game:gameVal,key:k,devices:dev,used:0,duration:days,price:p,status:"Unused",created:formatDate(),createdAt:createdAt,expiresAt:createdAt+days*24*60*60*1000};
+    keys.unshift(item);made.push(item);
+  }
+  settings.balance-=q*p; save(); localStorage.setItem(STORE+"_settings",JSON.stringify(settings));
+  generatedKey.textContent=made.length===1?made[0].key:`${made.length} keys generated`;
+  generatedInfo.textContent=`${gameVal} • ${dev} device${dev>1?"s":""} • ${duration.options[duration.selectedIndex].text} • Total ₹${(q*p).toLocaleString("en-IN")}`;
+  modal.classList.add("show"); renderDashboard(); renderKeys();
+}
+function closeModal(){modal.classList.remove("show")}
+function resetForm(){document.getElementById("devices").value=1;document.getElementById("quantity").value=1;document.getElementById("price").value=10;document.getElementById("customCheck").checked=false;toggleCustom();updateEstimate()}
+
+function refreshExpiryStatuses(){
+  const now=Date.now();
+  let changed=false;
+  keys.forEach(k=>{
+    if(k.expiresAt && now>=k.expiresAt && k.status!=="Expired"){
+      k.status="Expired"; changed=true;
+    }
+  });
+  if(changed) save();
+}
+function renderDashboard(){refreshExpiryStatuses();
+  const total=keys.length,used=keys.filter(k=>k.used>0||k.status==="Used").length;
+  totalKeys.textContent=total;usedKeys.textContent=used;unusedKeys.textContent=total-used;
+  totalDevices.textContent=keys.reduce((a,k)=>a+k.devices,0);
+  balance.textContent="₹"+Number(settings.balance||0).toLocaleString("en-IN");
+  const today=keys.filter(k=>k.created===formatDate()).length; todayCount.textContent=today;
+  const games={};keys.forEach(k=>games[k.game]=(games[k.game]||0)+1);
+  gameStats.innerHTML=Object.keys(games).length?Object.entries(games).map(([g,n])=>`<div class="row"><span>${g}</span><b>${n}</b></div>`).join(""):`<div class="row"><span>No keys generated</span><b>0</b></div>`;
+  recentActivity.innerHTML=keys.slice(0,5).map(k=>`<div class="row"><span>${k.key}</span><small>${k.created}</small></div>`).join("")||'<div class="row">No activity yet</div>';
+}
+function renderKeys(){refreshExpiryStatuses();
+  const q=(search.value||"").toLowerCase(), size=+pageSize.value;
+  const arr=keys.filter(k=>(k.key+" "+k.game+" "+k.status).toLowerCase().includes(q)).slice(0,size);
+  keyTable.innerHTML=arr.map((k,i)=>`<tr>
+    <td>${i+1}</td><td>${k.game}</td><td class="key">${k.key}</td>
+    <td>${k.used}/${k.devices}</td><td>${k.duration} Day${k.duration==1?"":"s"}</td>
+    <td>₹${Number(k.price).toLocaleString("en-IN")}</td>
+    <td><span class="badge ${(k.status==="Used"||k.status==="Expired")?"off":"ok"}">${k.status}</span></td>
+    <td>${k.created}</td>
+    <td><button class="btn danger" style="padding:7px 10px" onclick="deleteKey('${k.id}')">Delete</button></td>
+  </tr>`).join("");
+  empty.style.display=arr.length?"none":"block";
+}
+function deleteKey(id){if(confirm("Delete this key?")){keys=keys.filter(k=>k.id!==id);save();window.cloudDeleteKey?.(id);renderKeys();renderDashboard()}}
+function saveSettings(){
+  settings.name=panelName.value.trim()||"SARIF X MODE";
+  settings.balance=+adminBalance.value||0;
+  settings.prefix=prefix.value.trim()||"VIP_";
+  const newUserVal=newUser.value.trim()||"admin", newPassVal=newPass.value||"admin123";
+  localStorage.setItem(STORE+"_credentials",JSON.stringify({user:newUserVal,pass:newPassVal}));
+  localStorage.setItem(STORE+"_settings",JSON.stringify(settings));
+  alert("Settings saved.");
+  updateEstimate();
+}
+function clearAll(){
+  if(confirm("This will delete all demo keys and reset the panel data. Continue?")){
+    keys=[];settings={name:"SARIF X MODE",balance:2147457947,prefix:"SARIF_X_MODE_"};
+    save();localStorage.setItem(STORE+"_settings",JSON.stringify(settings));
+    renderDashboard();renderKeys();
+  }
+}
+panelName.value=settings.name;adminBalance.value=settings.balance;prefix.value=settings.prefix;
+const savedCred=JSON.parse(localStorage.getItem(STORE+"_credentials")||"null")||DEFAULT_AUTH;
+newUser.value=savedCred.user;newPass.value=savedCred.pass;
+if(!autoGenerateFromPublicLink()){ if(isLogged())hideAuth(); else showAuth(); }
+renderPublicLink();
+updateEstimate();renderDashboard();renderKeys();
+</script>
+
+<script>
+const GATE_SETTINGS_KEY="sarif_x_mode_gate";
+function getGateSettings(){
+  try{return JSON.parse(localStorage.getItem(GATE_SETTINGS_KEY))||{url:"https://sarifx.github.io/SARIF_X_MODE/",param:"return"}}
+  catch(e){return {url:"https://sarifx.github.io/SARIF_X_MODE/",param:"return"}}
+}
+function loadGateSettings(){
+  const s=getGateSettings();
+  if(document.getElementById("gateUrl")) gateUrl.value=s.url||"";
+  if(document.getElementById("gateReturnParam")) gateReturnParam.value=s.param||"return";
+}
+function saveGateSettings(){
+  const url=(gateUrl.value||"").trim();
+  const param=(gateReturnParam.value||"return").trim().replace(/[^a-zA-Z0-9_-]/g,"")||"return";
+  localStorage.setItem(GATE_SETTINGS_KEY,JSON.stringify({url,param}));
+  alert("Key generation link saved.");
+}
+function openAdminLogin(){
+  document.getElementById("authScreen").style.display="grid";
+}
+function startKeyGate(){
+  const s=getGateSettings();
+  if(!s.url){ alert("The key-generation link has not been configured by the admin."); return; }
+  const returnUrl=location.origin+location.pathname+"?"+s.param+"=1";
+  const sep=s.url.includes("?")?"&":"?";
+  location.href=s.url+sep+s.param+"="+encodeURIComponent(returnUrl);
+}
+function handleGateReturn(){
+  const s=getGateSettings();
+  const qs=new URLSearchParams(location.search);
+  if(qs.get(s.param)==="1"){
+    const msg=document.getElementById("gateMessage");
+    if(msg) msg.textContent="Link completed. Continue to receive your key.";
+    // Do not fabricate a key client-side; actual key creation should be done by your backend.
+  }
+}
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  loadGateSettings();
+  handleGateReturn();
+  if(!isLogged()){
+    document.getElementById("authScreen").style.display="none";
+    document.getElementById("sidebar").style.display="none";
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    document.getElementById("publicHome").style.display="block";
+    document.getElementById("publicHome").classList.add("active");
+  }
+});
+</script>
+
+
+<script>
+const _adminNavigate = window.navigate;
+window.navigate = function(page){
+  if(!isLogged()){
+    openAdminLogin();
+    return;
+  }
+  return _adminNavigate(page);
+};
+</script>
+
+</body>
+</html>
